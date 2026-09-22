@@ -39,7 +39,7 @@ plugin are out of step, ask the user to update Sky Pie; never hand-write
 a link to recover.
 
 ```
-https://skypie.ai/l#open?path=%2FUsers%2Fyou%2Fworkspace%2Freport.html&from=e35eb3e489…
+https://contracthero.dev/skypieai/l#open?path=%2FUsers%2Fyou%2Fworkspace%2Freport.html&from=e35eb3e489…
 skypie://open?path=%2FUsers%2Fyou%2Fworkspace%2Freport.html&from=e35eb3e489…
 ```
 
@@ -73,7 +73,7 @@ call. **Always mint.**
 is peer-to-peer with nothing uploaded and nothing queued. If the Mac is closed
 the other device says "Device unreachable / Try again", which is accurate.
 
-**The `https` form is a redirect page.** It is served at `https://skypie.ai/l` and hands the fragment to the `skypie://` handler. The macOS
+**The `https` form is a redirect page.** It is served at `https://contracthero.dev/skypieai/l` (a stand-in until `skypie.ai` is live) and hands the fragment to the `skypie://` handler. The macOS
 share sheet (Share ▾ → *Share link…*) and a QR code take the raw form.
 
 ## If the device is not paired yet
