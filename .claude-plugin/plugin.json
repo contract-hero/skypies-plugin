@@ -1,28 +1,27 @@
 {
-  "name": "skypie",
-  "version": "0.1.1",
-  "description": "Send local files straight to your paired Sky Pie devices over a direct, end-to-end encrypted peer-to-peer link, and offer device pairing the moment a Remote Control session starts.",
+  "name": "skypies",
+  "version": "0.2.0",
+  "description": "skypies: manage the files your agents produce, and organize all your pies-in-the-sky. Send local files straight to your paired skypies devices over a direct, end-to-end encrypted peer-to-peer link, and offer device pairing the moment a Remote Control session starts.",
   "author": {
     "name": "Alvaro Lillo",
     "email": "alilloig@gmail.com"
   },
-  "homepage": "https://github.com/contract-hero/skypie-plugin",
-  "repository": "https://github.com/contract-hero/skypie-plugin",
+  "homepage": "https://github.com/contract-hero/skypies-plugin",
+  "repository": "https://github.com/contract-hero/skypies-plugin",
   "license": "Apache-2.0",
   "keywords": [
-    "skypie",
-    "skypie",
+    "skypies",
     "file-transfer",
     "peer-to-peer",
     "remote-control",
     "pairing"
   ],
   "mcpServers": {
-    "skypie": {
+    "skypies": {
       "type": "stdio",
       "command": "bash",
       "args": [
-        "${CLAUDE_PLUGIN_ROOT}/bin/skypie-mcp-launch.sh"
+        "${CLAUDE_PLUGIN_ROOT}/bin/skypies-mcp-launch.sh"
       ]
     }
   }

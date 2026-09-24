@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 #
-# skypie-mcp-launch.sh — resolve, verify and exec the skypie-mcp stdio server.
+# skypies-mcp-launch.sh — resolve, verify and exec the skypies-mcp stdio server.
 #
-# The skypie-mcp source lives in a PRIVATE repository, so this public plugin
+# The skypies-mcp source lives in a PRIVATE repository, so this public plugin
 # cannot build it. Instead it downloads a pinned release asset from the plugin
 # repository, checks the asset against the SHA-256 recorded in bin/manifest.json,
 # and caches the result. A binary that fails the checksum is deleted, never run.
 #
 # Resolution order:
 #
-#   1. $SKYPIE_MCP_BIN                 — explicit override, wins over everything.
+#   1. $SKYPIES_MCP_BIN                 — explicit override, wins over everything.
 #   2. cache                          — a verified download from an earlier run.
-#   3. $SKYPIE_SOURCE_REPO/target/...  — a maintainer's local checkout of the
+#   3. $SKYPIES_SOURCE_REPO/target/...  — a maintainer's local checkout of the
 #                                       private source repo. Never downloads.
 #   4. $PATH                          — a system-wide install.
 #   5. download                       — fetch, verify, cache, exec.
@@ -22,17 +22,17 @@ set -euo pipefail
 
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 MANIFEST="${PLUGIN_ROOT}/bin/manifest.json"
-CACHE_DIR="${XDG_CACHE_HOME:-${HOME}/.cache}/skypie-plugin"
+CACHE_DIR="${XDG_CACHE_HOME:-${HOME}/.cache}/skypies-plugin"
 
-log() { echo "skypie: $*" >&2; }
+log() { echo "skypies: $*" >&2; }
 
 die() { log "$*"; exit 1; }
 
 # --- 1. explicit override ---------------------------------------------------
-if [ -n "${SKYPIE_MCP_BIN:-}" ]; then
-  [ -x "${SKYPIE_MCP_BIN}" ] \
-    || die "SKYPIE_MCP_BIN is set to '${SKYPIE_MCP_BIN}' but that file is not executable."
-  exec "${SKYPIE_MCP_BIN}" "$@"
+if [ -n "${SKYPIES_MCP_BIN:-}" ]; then
+  [ -x "${SKYPIES_MCP_BIN}" ] \
+    || die "SKYPIES_MCP_BIN is set to '${SKYPIES_MCP_BIN}' but that file is not executable."
+  exec "${SKYPIES_MCP_BIN}" "$@"
 fi
 
 # --- platform key -----------------------------------------------------------
@@ -61,30 +61,30 @@ PY
 )
 EOF
 
-CACHED="${CACHE_DIR}/skypie-mcp-${VERSION}-${PLATFORM}"
+CACHED="${CACHE_DIR}/skypies-mcp-${VERSION}-${PLATFORM}"
 
 # --- 2. verified cache ------------------------------------------------------
 [ -x "${CACHED}" ] && exec "${CACHED}" "$@"
 
 # --- 3. maintainer's local source checkout ----------------------------------
-if [ -n "${SKYPIE_SOURCE_REPO:-}" ]; then
+if [ -n "${SKYPIES_SOURCE_REPO:-}" ]; then
   for build in release debug; do
-    candidate="${SKYPIE_SOURCE_REPO}/target/${build}/skypie-mcp"
+    candidate="${SKYPIES_SOURCE_REPO}/target/${build}/skypies-mcp"
     [ -x "${candidate}" ] && exec "${candidate}" "$@"
   done
-  log "SKYPIE_SOURCE_REPO is set but no skypie-mcp build was found under it; continuing."
+  log "SKYPIES_SOURCE_REPO is set but no skypies-mcp build was found under it; continuing."
 fi
 
 # --- 4. system install ------------------------------------------------------
-if command -v skypie-mcp >/dev/null 2>&1; then
-  exec skypie-mcp "$@"
+if command -v skypies-mcp >/dev/null 2>&1; then
+  exec skypies-mcp "$@"
 fi
 
 # --- 5. download ------------------------------------------------------------
 if [ -z "${ASSET}" ] || [ -z "${SHA256}" ]; then
   die "no published release for ${PLATFORM} in bin/manifest.json.
 Maintainers: build the server, then run scripts/publish-release.sh.
-Everyone else: install skypie-mcp on your PATH, or set SKYPIE_MCP_BIN."
+Everyone else: install skypies-mcp on your PATH, or set SKYPIES_MCP_BIN."
 fi
 
 URL="https://github.com/${REPO}/releases/download/v${VERSION}/${ASSET}"
@@ -99,7 +99,7 @@ for _ in $(seq 1 120); do
   [ -x "${CACHED}" ] && exec "${CACHED}" "$@"
   sleep 1
 done
-[ "${acquired}" = 1 ] || die "timed out waiting for another session to finish downloading skypie-mcp.
+[ "${acquired}" = 1 ] || die "timed out waiting for another session to finish downloading skypies-mcp.
 If no download is running, remove the stale lock: rm -rf '${LOCK}'"
 # shellcheck disable=SC2064
 trap "rmdir '${LOCK}' 2>/dev/null || true" EXIT
@@ -110,7 +110,7 @@ trap "rmdir '${LOCK}' 2>/dev/null || true" EXIT
 TMP="$(mktemp -d "${CACHE_DIR}/dl.XXXXXX")"
 trap "rm -rf '${TMP}'; rmdir '${LOCK}' 2>/dev/null || true" EXIT
 
-log "downloading skypie-mcp ${VERSION} for ${PLATFORM}..."
+log "downloading skypies-mcp ${VERSION} for ${PLATFORM}..."
 curl -fsSL --retry 3 --retry-delay 2 -o "${TMP}/${ASSET}" "${URL}" \
   || die "download failed: ${URL}"
 
@@ -124,11 +124,11 @@ fi
 
 tar -xzf "${TMP}/${ASSET}" -C "${TMP}" \
   || die "cannot unpack ${ASSET}."
-[ -f "${TMP}/skypie-mcp" ] || die "${ASSET} does not contain a skypie-mcp binary."
+[ -f "${TMP}/skypies-mcp" ] || die "${ASSET} does not contain a skypies-mcp binary."
 
-chmod +x "${TMP}/skypie-mcp"
+chmod +x "${TMP}/skypies-mcp"
 # Rename inside the same filesystem, so the cache never holds a partial file.
-mv -f "${TMP}/skypie-mcp" "${CACHED}"
+mv -f "${TMP}/skypies-mcp" "${CACHED}"
 log "installed ${CACHED}"
 
 rm -rf "${TMP}"; rmdir "${LOCK}" 2>/dev/null || true
