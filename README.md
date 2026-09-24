@@ -1,10 +1,10 @@
-# skypie
+# skypies
 
-Claude Code plugin for [Sky Pie](https://github.com/contract-hero/skypie-core). It
+Claude Code plugin for [skypies](https://github.com/contract-hero/skypies-core). It
 bundles two things:
 
-1. The **`skypie` MCP server**, which sends local files straight to your paired
-   Sky Pie devices over a direct, end-to-end encrypted peer-to-peer link.
+1. The **`skypies` MCP server**, which sends local files straight to your paired
+   skypies devices over a direct, end-to-end encrypted peer-to-peer link.
    Nothing is uploaded to a server.
 2. A **SessionStart hook**, which offers device pairing the first time you open
    a Claude Code Remote Control session, so your phone can receive files without
@@ -14,16 +14,16 @@ bundles two things:
 
 ```
 claude plugin marketplace add contract-hero/plugin-marketplace
-claude plugin install skypie@contract-hero
+claude plugin install skypies@contract-hero
 ```
 
 The server binary is downloaded on first use from this repository's releases,
 checked against the SHA-256 pinned in `bin/manifest.json`, and cached under
-`~/.cache/skypie-plugin/`. A download that fails the checksum is deleted and
+`~/.cache/skypies-plugin/`. A download that fails the checksum is deleted and
 never executed.
 
-> If you already added `skypie` by hand with `claude mcp add`, remove that entry
-> first with `claude mcp remove skypie`. Two servers with the same name is one
+> If you already added `skypies` by hand with `claude mcp add`, remove that entry
+> first with `claude mcp remove skypies`. Two servers with the same name is one
 > too many.
 
 ## Tools
@@ -42,26 +42,26 @@ compares them before `confirm_pairing` runs.
 
 ## Send boundary
 
-`SKYPIE_MCP_ROOTS` is a colon-separated list of directories the server may send
+`SKYPIES_MCP_ROOTS` is a colon-separated list of directories the server may send
 files from. A path outside every root is refused. The plugin leaves it unset, so
 it defaults to the directory Claude Code launched the server in. Widen it only
 on purpose, in your own MCP settings.
 
 ## The pairing hook
 
-`hooks/offer-skypie-pairing.sh` runs on SessionStart and stays completely silent
+`hooks/offer-skypies-pairing.sh` runs on SessionStart and stays completely silent
 unless every one of these is true:
 
 | Condition | Why |
 |---|---|
 | `CLAUDE_CODE_ENVIRONMENT_KIND=bridge` | `claude rc` sets this in every session it spawns for a phone, before the process starts. A plain local session leaves it unset. |
 | `CLAUDE_CODE_REMOTE_SESSION_ID` unset | Drops cloud sessions, which run on Anthropic hardware and cannot reach your machine's files. |
-| `~/.claude/.skypie-paired` absent | Written once a device is confirmed paired. |
-| `~/.claude/.skypie-no-offer` absent | Written if you decline the offer. |
+| `~/.claude/.skypies-paired` absent | Written once a device is confirmed paired. |
+| `~/.claude/.skypies-no-offer` absent | Written if you decline the offer. |
 
 When it does fire, it injects one note asking Claude to call `list_devices` and
-offer pairing only when no device is paired. The hook never reads SkyPie state
-files, so a change to SkyPie's on-disk format cannot break it.
+offer pairing only when no device is paired. The hook never reads skypies state
+files, so a change to skypies's on-disk format cannot break it.
 
 ### Known gap
 
@@ -73,8 +73,8 @@ against a running `claude rc` are the covered path.
 ### Re-arm or silence it
 
 ```
-rm    ~/.claude/.skypie-paired      # offer pairing again
-touch ~/.claude/.skypie-no-offer    # never offer again
+rm    ~/.claude/.skypies-paired      # offer pairing again
+touch ~/.claude/.skypies-no-offer    # never offer again
 ```
 
 ## Binary resolution
@@ -84,10 +84,10 @@ never builds:
 
 | Order | Source |
 |---|---|
-| 1 | `$SKYPIE_MCP_BIN` — explicit override |
-| 2 | `~/.cache/skypie-plugin/` — a verified earlier download |
-| 3 | `$SKYPIE_SOURCE_REPO/target/{release,debug}/skypie-mcp` — a maintainer's checkout of the private source repo |
-| 4 | `skypie-mcp` on `$PATH` |
+| 1 | `$SKYPIES_MCP_BIN` — explicit override |
+| 2 | `~/.cache/skypies-plugin/` — a verified earlier download |
+| 3 | `$SKYPIES_SOURCE_REPO/target/{release,debug}/skypies-mcp` — a maintainer's checkout of the private source repo |
+| 4 | `skypies-mcp` on `$PATH` |
 | 5 | Download from this repo's releases, verify, cache |
 
 ## Releasing (maintainers)
@@ -96,8 +96,8 @@ The server source is private, so releases are cut from a machine that has both
 checkouts:
 
 ```
-./scripts/publish-release.sh 0.1.0 ~/workspace/skypie-core            # build + pin, no upload
-./scripts/publish-release.sh 0.1.0 ~/workspace/skypie-core --publish  # upload the release
+./scripts/publish-release.sh 0.1.0 ~/workspace/skypies-core            # build + pin, no upload
+./scripts/publish-release.sh 0.1.0 ~/workspace/skypies-core --publish  # upload the release
 ```
 
 Then commit the updated `bin/manifest.json`, which is what points the launcher at

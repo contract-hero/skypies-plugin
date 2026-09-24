@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# publish-release.sh — build skypie-mcp, package it, record its checksum in
+# publish-release.sh — build skypies-mcp, package it, record its checksum in
 # bin/manifest.json, and publish the assets as a GitHub release on this repo.
 #
 # The server source is private. This script is the bridge: a maintainer runs it
 # from a machine that has both checkouts, and it produces the public artifacts
 # the launcher downloads.
 #
-#   ./scripts/publish-release.sh 0.1.0 ~/workspace/skypie
+#   ./scripts/publish-release.sh 0.1.0 ~/workspace/skypies
 #
 # It stops before uploading unless you pass --publish, so you can inspect the
 # packaged assets and the manifest diff first.
@@ -24,10 +24,10 @@ DIST="${PLUGIN_ROOT}/dist"
 
 die() { echo "error: $*" >&2; exit 1; }
 
-[ -n "${VERSION}" ]     || die "usage: $0 <version> <path-to-skypie-source-repo> [--publish]"
-[ -n "${SOURCE_REPO}" ] || die "usage: $0 <version> <path-to-skypie-source-repo> [--publish]"
-[ -d "${SOURCE_REPO}/crates/skypie-mcp" ] \
-  || die "'${SOURCE_REPO}' does not look like the skypie source repo (no crates/skypie-mcp)."
+[ -n "${VERSION}" ]     || die "usage: $0 <version> <path-to-skypies-source-repo> [--publish]"
+[ -n "${SOURCE_REPO}" ] || die "usage: $0 <version> <path-to-skypies-source-repo> [--publish]"
+[ -d "${SOURCE_REPO}/crates/skypies-mcp" ] \
+  || die "'${SOURCE_REPO}' does not look like the skypies source repo (no crates/skypies-mcp)."
 command -v gh >/dev/null || die "the gh CLI is required."
 
 REPO="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['repo'])" "${MANIFEST}")"
@@ -49,13 +49,13 @@ for pair in ${TARGETS}; do
   fi
 
   echo "building ${platform}..."
-  ( cd "${SOURCE_REPO}" && cargo build --release -p skypie-mcp --target "${target}" )
+  ( cd "${SOURCE_REPO}" && cargo build --release -p skypies-mcp --target "${target}" )
 
-  binary="${SOURCE_REPO}/target/${target}/release/skypie-mcp"
+  binary="${SOURCE_REPO}/target/${target}/release/skypies-mcp"
   [ -x "${binary}" ] || die "expected a binary at ${binary}."
 
-  asset="skypie-mcp-${VERSION}-${platform}.tar.gz"
-  tar -czf "${DIST}/${asset}" -C "$(dirname "${binary}")" skypie-mcp
+  asset="skypies-mcp-${VERSION}-${platform}.tar.gz"
+  tar -czf "${DIST}/${asset}" -C "$(dirname "${binary}")" skypies-mcp
   sha="$(shasum -a 256 "${DIST}/${asset}" | awk '{print $1}')"
   echo "  ${asset}  ${sha}"
   built+=("${platform}:${asset}:${sha}")
@@ -90,6 +90,6 @@ echo "creating release v${VERSION} on ${REPO}..."
 gh release create "v${VERSION}" "${DIST}"/*.tar.gz \
   --repo "${REPO}" \
   --title "v${VERSION}" \
-  --notes "skypie-mcp ${VERSION}. Checksums are pinned in bin/manifest.json."
+  --notes "skypies-mcp ${VERSION}. Checksums are pinned in bin/manifest.json."
 
 echo "done. Commit the updated bin/manifest.json so the launcher points at this release."
