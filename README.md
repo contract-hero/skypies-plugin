@@ -1,9 +1,9 @@
 # skypies
 
-Claude Code plugin for [skypies](https://contracthero.dev/skypies/). It
-bundles two things:
+Claude Code plugin for [skypies](https://contracthero.dev/skypies/), the
+companion that lets your agents make links to the Mac app. It adds two things:
 
-1. The **`skypies` MCP server**, which sends local files straight to your paired
+1. The **`skypies` MCP server**, which ships inside the skypies app. It sends local files straight to your paired
    skypies devices over a direct, end-to-end encrypted peer-to-peer link.
    Nothing is uploaded to a server.
 2. A **SessionStart hook**, which offers device pairing the first time you open
@@ -21,10 +21,9 @@ claude plugin marketplace add contract-hero/plugin-marketplace
 claude plugin install skypies@contract-hero
 ```
 
-The server binary is downloaded on first use from this repository's releases,
-checked against the SHA-256 pinned in `bin/manifest.json`, and cached under
-`~/.cache/skypies-plugin/`. A download that fails the checksum is deleted and
-never executed.
+The plugin downloads nothing. It runs the server at
+`skypies.app/Contents/MacOS/skypies-mcp`, so the server and the app always come
+from the same build. Update the app to update the server.
 
 > If you already added `skypies` by hand with `claude mcp add`, remove that entry
 > first with `claude mcp remove skypies`. Two servers with the same name is one
@@ -81,31 +80,18 @@ rm    ~/.claude/.skypies-paired      # offer pairing again
 touch ~/.claude/.skypies-no-offer    # never offer again
 ```
 
-## Binary resolution
+## Server resolution
 
-The launcher tries these in order, so a maintainer never downloads and a user
-never builds:
+The launcher, `bin/skypies-mcp-launch.sh`, tries these in order:
 
 | Order | Source |
 |---|---|
-| 1 | `$SKYPIES_MCP_BIN` — explicit override |
-| 2 | `~/.cache/skypies-plugin/` — a verified earlier download |
-| 3 | `$SKYPIES_SOURCE_REPO/target/{release,debug}/skypies-mcp` — a maintainer's checkout of the private source repo |
-| 4 | `skypies-mcp` on `$PATH` |
-| 5 | Download from this repo's releases, verify, cache |
+| 1 | `$SKYPIES_MCP_BIN` — explicit override, for a dev build |
+| 2 | `/Applications/skypies.app`, then `~/Applications/skypies.app` |
+| 3 | Spotlight, by the bundle id `ai.skypies.skypies` (build trees under `target/` are skipped) |
 
-## Releasing (maintainers)
-
-The server source is private, so releases are cut from a machine that has both
-checkouts:
-
-```
-./scripts/publish-release.sh 0.1.0 ~/workspace/skypies-core            # build + pin, no upload
-./scripts/publish-release.sh 0.1.0 ~/workspace/skypies-core --publish  # upload the release
-```
-
-Then commit the updated `bin/manifest.json`, which is what points the launcher at
-the new version.
+If it finds no app, the server fails to start, and the MCP log shows where to
+download the app.
 
 ## License
 

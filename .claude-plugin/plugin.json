@@ -1,12 +1,12 @@
 {
   "name": "skypies",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "skypies: manage the files your agents produce, and organize all your pies-in-the-sky. Send local files straight to your paired skypies devices over a direct, end-to-end encrypted peer-to-peer link, and offer device pairing the moment a Remote Control session starts.",
   "author": {
     "name": "Alvaro Lillo",
     "email": "alilloig@gmail.com"
   },
-  "homepage": "https://github.com/contract-hero/skypies-plugin",
+  "homepage": "https://contracthero.dev/skypies/",
   "repository": "https://github.com/contract-hero/skypies-plugin",
   "license": "Apache-2.0",
   "keywords": [

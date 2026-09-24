@@ -1,28 +1,24 @@
 #!/usr/bin/env bash
 #
-# skypies-mcp-launch.sh — resolve, verify and exec the skypies-mcp stdio server.
+# skypies-mcp-launch.sh — find the skypies app and exec the MCP server it ships.
 #
-# The skypies-mcp source lives in a PRIVATE repository, so this public plugin
-# cannot build it. Instead it downloads a pinned release asset from the plugin
-# repository, checks the asset against the SHA-256 recorded in bin/manifest.json,
-# and caches the result. A binary that fails the checksum is deleted, never run.
+# The plugin is a companion to the skypies Mac app. The app bundles the
+# server at skypies.app/Contents/MacOS/skypies-mcp, signed with the app, so the
+# server and the app always come from the same build. Nothing is downloaded.
 #
 # Resolution order:
 #
-#   1. $SKYPIES_MCP_BIN                 — explicit override, wins over everything.
-#   2. cache                          — a verified download from an earlier run.
-#   3. $SKYPIES_SOURCE_REPO/target/...  — a maintainer's local checkout of the
-#                                       private source repo. Never downloads.
-#   4. $PATH                          — a system-wide install.
-#   5. download                       — fetch, verify, cache, exec.
+#   1. $SKYPIES_MCP_BIN              — explicit override (a dev build).
+#   2. /Applications, ~/Applications — the usual install places.
+#   3. Spotlight, by bundle id       — the app installed somewhere else.
 #
 # Anything on stdout would corrupt the MCP stdio stream, so every message goes
 # to stderr, which Claude Code captures as MCP server logs.
 set -euo pipefail
 
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-MANIFEST="${PLUGIN_ROOT}/bin/manifest.json"
-CACHE_DIR="${XDG_CACHE_HOME:-${HOME}/.cache}/skypies-plugin"
+BUNDLE_ID="ai.skypies.skypies"
+DOWNLOAD_URL="https://github.com/contract-hero/skypies-releases/releases/latest/download/skypies-universal.dmg"
+SERVER="Contents/MacOS/skypies-mcp"
 
 log() { echo "skypies: $*" >&2; }
 
@@ -35,102 +31,21 @@ if [ -n "${SKYPIES_MCP_BIN:-}" ]; then
   exec "${SKYPIES_MCP_BIN}" "$@"
 fi
 
-# --- platform key -----------------------------------------------------------
-case "$(uname -s)" in
-  Darwin) os=darwin ;;
-  Linux)  os=linux ;;
-  *)      die "unsupported operating system: $(uname -s)" ;;
-esac
-case "$(uname -m)" in
-  arm64|aarch64) arch=arm64 ;;
-  x86_64|amd64)  arch=x86_64 ;;
-  *)             die "unsupported architecture: $(uname -m)" ;;
-esac
-PLATFORM="${os}-${arch}"
+[ "$(uname -s)" = "Darwin" ] || die "skypies runs on macOS only."
 
-# --- manifest ---------------------------------------------------------------
-[ -f "${MANIFEST}" ] || die "missing ${MANIFEST}."
-
-read -r VERSION REPO ASSET SHA256 <<EOF
-$(python3 - "$MANIFEST" "$PLATFORM" <<'PY'
-import json, sys
-m = json.load(open(sys.argv[1]))
-a = m.get("assets", {}).get(sys.argv[2], {})
-print(m.get("version", ""), m.get("repo", ""), a.get("name", ""), a.get("sha256", ""))
-PY
-)
-EOF
-
-CACHED="${CACHE_DIR}/skypies-mcp-${VERSION}-${PLATFORM}"
-
-# --- 2. verified cache ------------------------------------------------------
-[ -x "${CACHED}" ] && exec "${CACHED}" "$@"
-
-# --- 3. maintainer's local source checkout ----------------------------------
-if [ -n "${SKYPIES_SOURCE_REPO:-}" ]; then
-  for build in release debug; do
-    candidate="${SKYPIES_SOURCE_REPO}/target/${build}/skypies-mcp"
-    [ -x "${candidate}" ] && exec "${candidate}" "$@"
-  done
-  log "SKYPIES_SOURCE_REPO is set but no skypies-mcp build was found under it; continuing."
-fi
-
-# --- 4. system install ------------------------------------------------------
-if command -v skypies-mcp >/dev/null 2>&1; then
-  exec skypies-mcp "$@"
-fi
-
-# --- 5. download ------------------------------------------------------------
-if [ -z "${ASSET}" ] || [ -z "${SHA256}" ]; then
-  die "no published release for ${PLATFORM} in bin/manifest.json.
-Maintainers: build the server, then run scripts/publish-release.sh.
-Everyone else: install skypies-mcp on your PATH, or set SKYPIES_MCP_BIN."
-fi
-
-URL="https://github.com/${REPO}/releases/download/v${VERSION}/${ASSET}"
-mkdir -p "${CACHE_DIR}"
-
-# Thirty-two Remote Control sessions can start at once. A mkdir lock is atomic,
-# so exactly one of them downloads and the rest wait and then hit the cache.
-LOCK="${CACHE_DIR}/.lock-${VERSION}-${PLATFORM}"
-acquired=0
-for _ in $(seq 1 120); do
-  if mkdir "${LOCK}" 2>/dev/null; then acquired=1; break; fi
-  [ -x "${CACHED}" ] && exec "${CACHED}" "$@"
-  sleep 1
+# --- 2. usual install places ------------------------------------------------
+for app in "/Applications/skypies.app" "${HOME}/Applications/skypies.app"; do
+  [ -x "${app}/${SERVER}" ] && exec "${app}/${SERVER}" "$@"
 done
-[ "${acquired}" = 1 ] || die "timed out waiting for another session to finish downloading skypies-mcp.
-If no download is running, remove the stale lock: rm -rf '${LOCK}'"
-# shellcheck disable=SC2064
-trap "rmdir '${LOCK}' 2>/dev/null || true" EXIT
 
-# Another session may have finished while we waited for the lock.
-[ -x "${CACHED}" ] && exec "${CACHED}" "$@"
+# --- 3. Spotlight -----------------------------------------------------------
+# Skip build trees: a bundle under `target/` is a dev build, not an install.
+while IFS= read -r app; do
+  case "${app}" in */target/*) continue ;; esac
+  [ -x "${app}/${SERVER}" ] && exec "${app}/${SERVER}" "$@"
+done < <(mdfind "kMDItemCFBundleIdentifier == '${BUNDLE_ID}'" 2>/dev/null || true)
 
-TMP="$(mktemp -d "${CACHE_DIR}/dl.XXXXXX")"
-trap "rm -rf '${TMP}'; rmdir '${LOCK}' 2>/dev/null || true" EXIT
-
-log "downloading skypies-mcp ${VERSION} for ${PLATFORM}..."
-curl -fsSL --retry 3 --retry-delay 2 -o "${TMP}/${ASSET}" "${URL}" \
-  || die "download failed: ${URL}"
-
-actual="$(shasum -a 256 "${TMP}/${ASSET}" | awk '{print $1}')"
-if [ "${actual}" != "${SHA256}" ]; then
-  die "CHECKSUM MISMATCH for ${ASSET}.
-  expected ${SHA256}
-  actual   ${actual}
-The download was discarded and nothing was executed."
-fi
-
-tar -xzf "${TMP}/${ASSET}" -C "${TMP}" \
-  || die "cannot unpack ${ASSET}."
-[ -f "${TMP}/skypies-mcp" ] || die "${ASSET} does not contain a skypies-mcp binary."
-
-chmod +x "${TMP}/skypies-mcp"
-# Rename inside the same filesystem, so the cache never holds a partial file.
-mv -f "${TMP}/skypies-mcp" "${CACHED}"
-log "installed ${CACHED}"
-
-rm -rf "${TMP}"; rmdir "${LOCK}" 2>/dev/null || true
-trap - EXIT
-exec "${CACHED}" "$@"
+die "the skypies app is not installed, or it predates the bundled MCP server.
+This plugin runs the server that ships inside the app.
+Download it from ${DOWNLOAD_URL}, drag skypies to Applications, and open it once.
+Then restart Claude Code."
