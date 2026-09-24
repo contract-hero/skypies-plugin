@@ -1,6 +1,6 @@
 # skypies
 
-Claude Code plugin for [skypies](https://github.com/contract-hero/skypies-core). It
+Claude Code plugin for [skypies](https://contracthero.dev/skypies/). It
 bundles two things:
 
 1. The **`skypies` MCP server**, which sends local files straight to your paired
@@ -11,6 +11,10 @@ bundles two things:
    you having to remember to set it up.
 
 ## Install
+
+The plugin needs the skypies app on your Mac.
+[Download the DMG](https://github.com/contract-hero/skypies-releases/releases/latest/download/skypies-universal.dmg)
+(universal, macOS 11+). Then install the plugin:
 
 ```
 claude plugin marketplace add contract-hero/plugin-marketplace
