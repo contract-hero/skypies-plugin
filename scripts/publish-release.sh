@@ -7,7 +7,7 @@
 # from a machine that has both checkouts, and it produces the public artifacts
 # the launcher downloads.
 #
-#   ./scripts/publish-release.sh 0.1.0 ~/workspace/skypies
+#   ./scripts/publish-release.sh 0.1.0 ~/workspace/skypies-core
 #
 # It stops before uploading unless you pass --publish, so you can inspect the
 # packaged assets and the manifest diff first.
