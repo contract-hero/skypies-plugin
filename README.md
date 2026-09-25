@@ -3,9 +3,9 @@
 Claude Code plugin for [skypies](https://contracthero.dev/skypies/), the
 companion that lets your agents make links to the Mac app. It adds two things:
 
-1. The **`skypies` MCP server**, which ships inside the skypies app. It sends local files straight to your paired
-   skypies devices over a direct, end-to-end encrypted peer-to-peer link.
-   Nothing is uploaded to a server.
+1. The **`skypies` MCP server**, which ships inside the skypies app. It sends
+   local files straight to your paired skypies devices over a direct,
+   end-to-end encrypted peer-to-peer link. Nothing is uploaded to a server.
 2. A **SessionStart hook**, which offers device pairing the first time you open
    a Claude Code Remote Control session, so your phone can receive files without
    you having to remember to set it up.
