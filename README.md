@@ -1,7 +1,7 @@
 # skypies
 
 Claude Code plugin for [skypies](https://contracthero.dev/skypies/), the
-companion that lets your agents make links to the Mac app. It adds two things:
+companion that lets your agents make links to the Mac app. It adds three things:
 
 1. The **`skypies` MCP server**, which ships inside the skypies app. It sends
    local files straight to your paired skypies devices over a direct,
@@ -9,6 +9,8 @@ companion that lets your agents make links to the Mac app. It adds two things:
 2. A **SessionStart hook**, which offers device pairing the first time you open
    a Claude Code Remote Control session, so your phone can receive files without
    you having to remember to set it up.
+3. **Feedback hooks**, which put the comments you left on a file in skypies into
+   the agent's context.
 
 ## Install
 
@@ -49,6 +51,18 @@ compares them before `confirm_pairing` runs.
 files from. A path outside every root is refused. The plugin leaves it unset, so
 it defaults to the directory Claude Code launched the server in. Widen it only
 on purpose, in your own MCP settings.
+
+## The feedback hooks
+
+After a `Read`, `Write`, `Edit` or `MultiEdit`, the open comments on that file
+go into the session, with the line and the quoted text. On each prompt, one
+line names up to three files that have comments waiting. The agent fixes the
+file and calls `resolve_feedback`, and you see your comment resolve.
+
+These hooks run `skypies-mcp hook <event>` from the app. They are silent when a
+file has no comments, and they never launch the app: a hook fires on every
+`Read` in every session. If the app is not installed or not running, the hooks
+do nothing.
 
 ## The pairing hook
 

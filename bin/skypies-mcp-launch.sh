@@ -14,15 +14,26 @@
 #
 # Anything on stdout would corrupt the MCP stdio stream, so every message goes
 # to stderr, which Claude Code captures as MCP server logs.
+#
+# `skypies-mcp-launch.sh hook <event>` runs the server's hook subcommand for
+# hooks/hooks.json. A hook fires on every Read in every session, so in hook
+# mode the launcher never logs and a missing app means silence and exit 0.
 set -euo pipefail
 
 BUNDLE_ID="ai.skypies.skypies"
 DOWNLOAD_URL="https://github.com/contract-hero/skypies-releases/releases/latest/download/skypies-universal.dmg"
 SERVER="Contents/MacOS/skypies-mcp"
 
-log() { echo "skypies: $*" >&2; }
+HOOK_MODE=false
+[ "${1:-}" = "hook" ] && HOOK_MODE=true
 
-die() { log "$*"; exit 1; }
+log() { [ "${HOOK_MODE}" = true ] || echo "skypies: $*" >&2; }
+
+die() {
+  [ "${HOOK_MODE}" = true ] && exit 0
+  log "$*"
+  exit 1
+}
 
 # --- 1. explicit override ---------------------------------------------------
 if [ -n "${SKYPIES_MCP_BIN:-}" ]; then
