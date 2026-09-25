@@ -53,7 +53,7 @@ HOME_APP="${HOME:+${HOME}/Applications/skypies.app}"
 try_app() {
   if [ -f "$1/${SERVER}" ] && [ -x "$1/${SERVER}" ]; then
     log "using $1/${SERVER}"
-    exec "$1/${SERVER}" "${@:2}"
+    exec "$1/${SERVER}" "${@:2}" 3<&-
   fi
   [ -d "$1/Contents/MacOS" ] && stale="${stale}  $1"$'\n'
   return 0
@@ -68,11 +68,13 @@ try_app "/Applications/skypies.app" "$@"
 # step 2 checked. mdfind's stderr stays visible: it is the MCP log.
 spotlight="$(mdfind "kMDItemCFBundleIdentifier == '${BUNDLE_ID}'")" \
   || log "Spotlight search failed; only /Applications and ~/Applications were checked."
-while IFS= read -r app; do
+# The list comes in on fd 3: stdin must reach the server untouched, since it
+# carries the MCP stream or the hook JSON.
+while IFS= read -r app <&3; do
   case "${app}" in ''|*/target/*|/Applications/skypies.app) continue ;; esac
   [ "${app}" = "${HOME_APP}" ] && continue
   try_app "${app}" "$@"
-done <<< "${spotlight}"
+done 3<<< "${spotlight}"
 
 if [ -n "${stale}" ]; then
   die "found the skypies app, but it has no MCP server at ${SERVER}:
