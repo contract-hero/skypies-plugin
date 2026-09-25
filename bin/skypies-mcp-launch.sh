@@ -26,26 +26,49 @@ die() { log "$*"; exit 1; }
 
 # --- 1. explicit override ---------------------------------------------------
 if [ -n "${SKYPIES_MCP_BIN:-}" ]; then
-  [ -x "${SKYPIES_MCP_BIN}" ] \
-    || die "SKYPIES_MCP_BIN is set to '${SKYPIES_MCP_BIN}' but that file is not executable."
+  [ -f "${SKYPIES_MCP_BIN}" ] && [ -x "${SKYPIES_MCP_BIN}" ] \
+    || die "SKYPIES_MCP_BIN is set to '${SKYPIES_MCP_BIN}', but that is not an executable file."
+  log "using SKYPIES_MCP_BIN=${SKYPIES_MCP_BIN}"
   exec "${SKYPIES_MCP_BIN}" "$@"
 fi
 
 [ "$(uname -s)" = "Darwin" ] || die "skypies runs on macOS only."
 
+# Mac bundles that exist but ship no server (an app older than the plugin).
+# A string, not an array: an empty "${arr[@]}" fails under set -u in bash 3.2.
+stale=""
+HOME_APP="${HOME:+${HOME}/Applications/skypies.app}"
+
+try_app() {
+  if [ -f "$1/${SERVER}" ] && [ -x "$1/${SERVER}" ]; then
+    log "using $1/${SERVER}"
+    exec "$1/${SERVER}" "${@:2}"
+  fi
+  [ -d "$1/Contents/MacOS" ] && stale="${stale}  $1"$'\n'
+  return 0
+}
+
 # --- 2. usual install places ------------------------------------------------
-for app in "/Applications/skypies.app" "${HOME}/Applications/skypies.app"; do
-  [ -x "${app}/${SERVER}" ] && exec "${app}/${SERVER}" "$@"
-done
+try_app "/Applications/skypies.app" "$@"
+[ -n "${HOME_APP}" ] && try_app "${HOME_APP}" "$@"
 
 # --- 3. Spotlight -----------------------------------------------------------
-# Skip build trees: a bundle under `target/` is a dev build, not an install.
+# Skip build trees (a bundle under `target/` is a dev build) and the places
+# step 2 checked. mdfind's stderr stays visible: it is the MCP log.
+spotlight="$(mdfind "kMDItemCFBundleIdentifier == '${BUNDLE_ID}'")" \
+  || log "Spotlight search failed; only /Applications and ~/Applications were checked."
 while IFS= read -r app; do
-  case "${app}" in */target/*) continue ;; esac
-  [ -x "${app}/${SERVER}" ] && exec "${app}/${SERVER}" "$@"
-done < <(mdfind "kMDItemCFBundleIdentifier == '${BUNDLE_ID}'" 2>/dev/null || true)
+  case "${app}" in ''|*/target/*|/Applications/skypies.app) continue ;; esac
+  [ "${app}" = "${HOME_APP}" ] && continue
+  try_app "${app}" "$@"
+done <<< "${spotlight}"
 
-die "the skypies app is not installed, or it predates the bundled MCP server.
-This plugin runs the server that ships inside the app.
+if [ -n "${stale}" ]; then
+  die "found the skypies app, but it has no MCP server at ${SERVER}:
+${stale}This app is older than the plugin. Update it from ${DOWNLOAD_URL},
+replace the old copy, open it once, then restart Claude Code."
+fi
+die "the skypies app is not installed.
+This plugin runs the MCP server that ships inside the app.
 Download it from ${DOWNLOAD_URL}, drag skypies to Applications, and open it once.
 Then restart Claude Code."

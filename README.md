@@ -90,8 +90,9 @@ The launcher, `bin/skypies-mcp-launch.sh`, tries these in order:
 | 2 | `/Applications/skypies.app`, then `~/Applications/skypies.app` |
 | 3 | Spotlight, by the bundle id `ai.skypies.skypies` (build trees under `target/` are skipped) |
 
-If it finds no app, the server fails to start, and the MCP log shows where to
-download the app.
+If it finds no app, or only an app older than the plugin (one without
+`skypies-mcp`), the server fails to start, and the MCP log says which case
+applies and where to download the app.
 
 ## License
 
