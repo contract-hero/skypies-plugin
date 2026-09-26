@@ -14,15 +14,26 @@
 #
 # Anything on stdout would corrupt the MCP stdio stream, so every message goes
 # to stderr, which Claude Code captures as MCP server logs.
+#
+# `skypies-mcp-launch.sh hook <event>` runs the server's hook subcommand for
+# hooks/hooks.json. A hook fires on every Read in every session, so in hook
+# mode the launcher never logs and a missing app means silence and exit 0.
 set -euo pipefail
 
 BUNDLE_ID="ai.skypies.skypies"
 DOWNLOAD_URL="https://github.com/contract-hero/skypies-releases/releases/latest/download/skypies-universal.dmg"
 SERVER="Contents/MacOS/skypies-mcp"
 
-log() { echo "skypies: $*" >&2; }
+HOOK_MODE=false
+[ "${1:-}" = "hook" ] && HOOK_MODE=true
 
-die() { log "$*"; exit 1; }
+log() { [ "${HOOK_MODE}" = true ] || echo "skypies: $*" >&2; }
+
+die() {
+  [ "${HOOK_MODE}" = true ] && exit 0
+  log "$*"
+  exit 1
+}
 
 # --- 1. explicit override ---------------------------------------------------
 if [ -n "${SKYPIES_MCP_BIN:-}" ]; then
@@ -42,7 +53,7 @@ HOME_APP="${HOME:+${HOME}/Applications/skypies.app}"
 try_app() {
   if [ -f "$1/${SERVER}" ] && [ -x "$1/${SERVER}" ]; then
     log "using $1/${SERVER}"
-    exec "$1/${SERVER}" "${@:2}"
+    exec "$1/${SERVER}" "${@:2}" 3<&-
   fi
   [ -d "$1/Contents/MacOS" ] && stale="${stale}  $1"$'\n'
   return 0
@@ -57,11 +68,13 @@ try_app "/Applications/skypies.app" "$@"
 # step 2 checked. mdfind's stderr stays visible: it is the MCP log.
 spotlight="$(mdfind "kMDItemCFBundleIdentifier == '${BUNDLE_ID}'")" \
   || log "Spotlight search failed; only /Applications and ~/Applications were checked."
-while IFS= read -r app; do
+# The list comes in on fd 3: stdin must reach the server untouched, since it
+# carries the MCP stream or the hook JSON.
+while IFS= read -r app <&3; do
   case "${app}" in ''|*/target/*|/Applications/skypies.app) continue ;; esac
   [ "${app}" = "${HOME_APP}" ] && continue
   try_app "${app}" "$@"
-done <<< "${spotlight}"
+done 3<<< "${spotlight}"
 
 if [ -n "${stale}" ]; then
   die "found the skypies app, but it has no MCP server at ${SERVER}:

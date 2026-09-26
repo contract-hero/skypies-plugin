@@ -1,5 +1,5 @@
 {
-  "description": "Offer skypies pairing on the first Remote Control session, until a device is paired.",
+  "description": "Offer skypies pairing on the first Remote Control session, and put the comments you left in skypies into the agent's context.",
   "hooks": {
     "SessionStart": [
       {
@@ -9,6 +9,39 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT:-.}/hooks/offer-skypies-pairing.sh\"",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT:-.}/bin/skypies-mcp-launch.sh\" hook read",
+            "timeout": 3
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT:-.}/bin/skypies-mcp-launch.sh\" hook wrote",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT:-.}/bin/skypies-mcp-launch.sh\" hook prompt",
+            "timeout": 3
           }
         ]
       }
