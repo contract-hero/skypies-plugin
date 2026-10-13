@@ -1,6 +1,6 @@
 {
   "name": "skypies",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Create links to the files your agents produce and open them on your paired skypies devices.",
   "author": {
     "name": "Alvaro Lillo",

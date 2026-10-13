@@ -21,7 +21,7 @@
 set -euo pipefail
 
 BUNDLE_ID="ai.skypies.skypies"
-DOWNLOAD_URL="https://github.com/contract-hero/skypies-releases/releases/latest/download/skypies-universal.dmg"
+DOWNLOAD_URL="https://github.com/contract-hero/skypies-releases/releases/latest/download/skypies.dmg"
 SERVER="Contents/MacOS/skypies-mcp"
 
 HOOK_MODE=false

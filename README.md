@@ -20,8 +20,8 @@ Stop hook (item 4); only Claude Code gets items 2 and 3 (see [Codex](#codex)):
 ## Install
 
 The plugin needs the skypies app on your Mac.
-[Download the DMG](https://github.com/contract-hero/skypies-releases/releases/latest/download/skypies-universal.dmg)
-(universal, macOS 11+). Then install the plugin:
+[Download the DMG](https://github.com/contract-hero/skypies-releases/releases/latest/download/skypies.dmg)
+(Apple Silicon, macOS 11+). Then install the plugin:
 
 ```
 claude plugin marketplace add contract-hero/plugin-marketplace
